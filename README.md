@@ -8,7 +8,7 @@ It works on desktop, iOS, and Android and renders Telegram premium emoji and sti
 
 - Imports text, photos, files, stickers, and premium emoji.
 - Writes regular Markdown and attachment files into the vault.
-- Prevents duplicate events and duplicate attachment storage.
+- Prevents duplicate events by their stable Telegram message links and does not add visible technical markers to notes.
 - Scales emoji like Telegram: compact next to text and larger for emoji-only messages.
 - Keeps API credentials and the device name local instead of syncing them in plugin `data.json`.
 - Works alongside Self-hosted LiveSync; LiveSync only sees ordinary vault files.
@@ -77,3 +77,7 @@ The plugin never makes the vault or attachments public. Your server URL is confi
 
 MIT
 
+## Changes in 0.6.3
+
+- Removed `tg-event` HTML comments from generated notes.
+- Existing legacy marker lines are removed automatically when the plugin starts.

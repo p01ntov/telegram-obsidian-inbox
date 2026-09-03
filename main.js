@@ -16939,6 +16939,60 @@ var require_browser = __commonJS({
   }
 });
 
+// src/telegram-blocks.js
+var require_telegram_blocks = __commonJS({
+  "src/telegram-blocks.js"(exports2, module2) {
+    function removeLegacyEventMarkers2(content) {
+      return String(content || "").replace(
+        /^[\t ]*<!--\s*\/?tg-event:[^>]*-->\s*(?:\r?\n|$)/gm,
+        ""
+      );
+    }
+    function telegramSourceLink(markdown) {
+      const match = String(markdown || "").match(
+        /\[↗\]\((https:\/\/t\.me\/[^)\s]+)\)/
+      );
+      return match ? match[1] : "";
+    }
+    function insertTelegramBlock2(content, event) {
+      const cleaned = removeLegacyEventMarkers2(content);
+      const markdown = String(event?.markdown || "").trim();
+      const sourceLink = telegramSourceLink(markdown);
+      if (sourceLink && cleaned.includes(`(${sourceLink})`) || markdown && cleaned.includes(markdown)) {
+        return cleaned === content ? content : `${cleaned.trimEnd()}
+`;
+      }
+      const heading = "## \u041B\u0435\u043D\u0442\u0430 Telegram";
+      let result = cleaned;
+      if (!result.includes(heading)) {
+        result = `${result.trimEnd()}
+
+${heading}
+
+`;
+      }
+      const headingIndex = result.indexOf(heading);
+      const sectionStart = headingIndex + heading.length;
+      const nextHeadingMatch = /\n##\s+/g;
+      nextHeadingMatch.lastIndex = sectionStart;
+      const next = nextHeadingMatch.exec(result);
+      const sectionEnd = next ? next.index : result.length;
+      const before = result.slice(0, sectionEnd).trimEnd();
+      const after = result.slice(sectionEnd).replace(/^\n+/, "");
+      return `${before}
+
+${markdown}
+
+${after}`.trimEnd() + "\n";
+    }
+    module2.exports = {
+      insertTelegramBlock: insertTelegramBlock2,
+      removeLegacyEventMarkers: removeLegacyEventMarkers2,
+      telegramSourceLink
+    };
+  }
+});
+
 // node_modules/lottie-web/build/player/lottie_light.min.js
 var require_lottie_light_min = __commonJS({
   "node_modules/lottie-web/build/player/lottie_light.min.js"(exports2, module2) {
@@ -20359,6 +20413,10 @@ var {
 var { RangeSetBuilder } = require_dist2();
 var { Decoration, ViewPlugin, WidgetType } = require_dist4();
 var { gunzipSync } = require_browser();
+var {
+  insertTelegramBlock,
+  removeLegacyEventMarkers
+} = require_telegram_blocks();
 var PLUGIN_NAME = "Telegram Custom Emoji";
 var DEFAULT_SETTINGS = {
   serverUrl: "",
@@ -20409,32 +20467,6 @@ tags:
 
 ## \u0418\u0442\u043E\u0433 \u0434\u043D\u044F
 `;
-}
-function insertTelegramBlock(content, event) {
-  const marker = `<!-- tg-event:${event.id} -->`;
-  if (content.includes(marker)) return content;
-  const heading = "## \u041B\u0435\u043D\u0442\u0430 Telegram";
-  let result = content;
-  if (!result.includes(heading)) {
-    result = `${result.trimEnd()}
-
-${heading}
-
-`;
-  }
-  const headingIndex = result.indexOf(heading);
-  const sectionStart = headingIndex + heading.length;
-  const nextHeadingMatch = /\n##\s+/g;
-  nextHeadingMatch.lastIndex = sectionStart;
-  const next = nextHeadingMatch.exec(result);
-  const sectionEnd = next ? next.index : result.length;
-  const before = result.slice(0, sectionEnd).trimEnd();
-  const after = result.slice(sectionEnd).replace(/^\n+/, "");
-  return `${before}
-
-${event.markdown.trim()}
-
-${after}`.trimEnd() + "\n";
 }
 var TelegramEmojiWidget = class _TelegramEmojiWidget extends WidgetType {
   constructor(plugin, id, sourcePath, fallback, size) {
@@ -20641,8 +20673,10 @@ var TelegramCustomEmojiPlugin = class extends Plugin {
     this.app.workspace.onLayoutReady(() => {
       this.configurePolling();
       window.setTimeout(() => {
-        this.rerenderMarkdown();
-        if (this.settings.autoSync && this.settings.apiToken) void this.syncNow(false);
+        void this.cleanupLegacyEventMarkers().finally(() => {
+          this.rerenderMarkdown();
+          if (this.settings.autoSync && this.settings.apiToken) void this.syncNow(false);
+        });
       }, 1200);
     });
     console.log(`${PLUGIN_NAME} loaded on ${this.settings.deviceName}`);
@@ -20690,6 +20724,19 @@ var TelegramCustomEmojiPlugin = class extends Plugin {
       ...syncableSettings
     } = this.settings;
     await this.saveData(syncableSettings);
+  }
+  async cleanupLegacyEventMarkers() {
+    const files = this.app.vault.getMarkdownFiles().filter((file) => file.path.startsWith("\u0423\u043D\u0438\u0432\u0435\u0440/"));
+    for (const file of files) {
+      try {
+        await this.app.vault.process(
+          file,
+          (content) => content.includes("<!-- tg-event:") ? removeLegacyEventMarkers(content) : content
+        );
+      } catch (error) {
+        console.warn(`${PLUGIN_NAME}: could not clean ${file.path}`, error);
+      }
+    }
   }
   configurePolling() {
     if (this.pollTimer !== null) {

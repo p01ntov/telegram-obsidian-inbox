@@ -10,6 +10,10 @@ const {
 const { RangeSetBuilder } = require("@codemirror/state");
 const { Decoration, ViewPlugin, WidgetType } = require("@codemirror/view");
 const { gunzipSync } = require("fflate");
+const {
+  insertTelegramBlock,
+  removeLegacyEventMarkers,
+} = require("./telegram-blocks");
 
 const PLUGIN_NAME = "Telegram Custom Emoji";
 const DEFAULT_SETTINGS = {
@@ -67,26 +71,6 @@ tags:
 
 ## Итог дня
 `;
-}
-
-function insertTelegramBlock(content, event) {
-  const marker = `<!-- tg-event:${event.id} -->`;
-  if (content.includes(marker)) return content;
-
-  const heading = "## Лента Telegram";
-  let result = content;
-  if (!result.includes(heading)) {
-    result = `${result.trimEnd()}\n\n${heading}\n\n`;
-  }
-  const headingIndex = result.indexOf(heading);
-  const sectionStart = headingIndex + heading.length;
-  const nextHeadingMatch = /\n##\s+/g;
-  nextHeadingMatch.lastIndex = sectionStart;
-  const next = nextHeadingMatch.exec(result);
-  const sectionEnd = next ? next.index : result.length;
-  const before = result.slice(0, sectionEnd).trimEnd();
-  const after = result.slice(sectionEnd).replace(/^\n+/, "");
-  return `${before}\n\n${event.markdown.trim()}\n\n${after}`.trimEnd() + "\n";
 }
 
 class TelegramEmojiWidget extends WidgetType {
@@ -360,8 +344,10 @@ class TelegramCustomEmojiPlugin extends Plugin {
     this.app.workspace.onLayoutReady(() => {
       this.configurePolling();
       window.setTimeout(() => {
-        this.rerenderMarkdown();
-        if (this.settings.autoSync && this.settings.apiToken) void this.syncNow(false);
+        void this.cleanupLegacyEventMarkers().finally(() => {
+          this.rerenderMarkdown();
+          if (this.settings.autoSync && this.settings.apiToken) void this.syncNow(false);
+        });
       }, 1200);
     });
     console.log(`${PLUGIN_NAME} loaded on ${this.settings.deviceName}`);
@@ -413,6 +399,23 @@ class TelegramCustomEmojiPlugin extends Plugin {
       ...syncableSettings
     } = this.settings;
     await this.saveData(syncableSettings);
+  }
+
+  async cleanupLegacyEventMarkers() {
+    const files = this.app.vault
+      .getMarkdownFiles()
+      .filter((file) => file.path.startsWith("Универ/"));
+    for (const file of files) {
+      try {
+        await this.app.vault.process(file, (content) =>
+          content.includes("<!-- tg-event:")
+            ? removeLegacyEventMarkers(content)
+            : content,
+        );
+      } catch (error) {
+        console.warn(`${PLUGIN_NAME}: could not clean ${file.path}`, error);
+      }
+    }
   }
 
   configurePolling() {
