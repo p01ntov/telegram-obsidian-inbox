@@ -11,7 +11,9 @@
 
 .tg-custom-emoji-host .tg-custom-emoji-media,
 .tg-custom-emoji-host .tg-custom-emoji-lottie,
-.tg-custom-emoji-host .tg-custom-emoji-lottie svg {
+.tg-custom-emoji-host .tg-custom-emoji-lottie svg,
+.tg-custom-emoji-host .tg-custom-emoji-skottie,
+.tg-custom-emoji-host .tg-custom-emoji-skottie-canvas {
   display: block;
   width: 100%;
   height: 100%;
@@ -20,6 +22,11 @@
 
 .tg-custom-emoji-host .tg-custom-emoji-lottie svg {
   overflow: visible;
+}
+
+.tg-custom-emoji-host .tg-custom-emoji-skottie,
+.tg-custom-emoji-host .tg-custom-emoji-skottie-canvas {
+  pointer-events: none;
 }
 
 .tg-custom-emoji-fallback {

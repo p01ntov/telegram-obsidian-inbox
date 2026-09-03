@@ -14,6 +14,7 @@ const {
   insertTelegramBlock,
   removeLegacyEventMarkers,
 } = require("./telegram-blocks");
+const { SkottieRuntime } = require("./skottie-runtime");
 
 const PLUGIN_NAME = "Telegram Custom Emoji";
 const DEFAULT_SETTINGS = {
@@ -297,7 +298,7 @@ class TelegramCustomEmojiPlugin extends Plugin {
       persistedSettings.deviceName ||
       defaultDeviceName();
     this.objectUrls = new Set();
-    this.animations = new Set();
+    this.skottie = new SkottieRuntime();
     this.syncPromise = null;
     this.pollTimer = null;
     this.lastSyncSummary = "";
@@ -356,13 +357,8 @@ class TelegramCustomEmojiPlugin extends Plugin {
   onunload() {
     this.domObserver?.disconnect();
     if (this.pollTimer !== null) window.clearInterval(this.pollTimer);
-    for (const animation of this.animations) {
-      try {
-        animation.destroy();
-      } catch (_) {}
-    }
+    this.skottie?.destroy();
     for (const url of this.objectUrls) URL.revokeObjectURL(url);
-    this.animations.clear();
     this.objectUrls.clear();
   }
 
@@ -620,9 +616,13 @@ class TelegramCustomEmojiPlugin extends Plugin {
       node.classList.remove("tg-custom-emoji-fallback");
       node.replaceChildren();
       if (extension === "tgs") {
-        this.renderLottie(node, this.decodeTgs(data));
+        await this.renderLottie(node, this.decodeTgs(data), size);
       } else if (extension === "json") {
-        this.renderLottie(node, JSON.parse(new TextDecoder().decode(new Uint8Array(data))));
+        await this.renderLottie(
+          node,
+          JSON.parse(new TextDecoder().decode(new Uint8Array(data))),
+          size,
+        );
       } else if (extension === "webm") {
         this.renderWebm(node, data);
       } else {
@@ -638,28 +638,13 @@ class TelegramCustomEmojiPlugin extends Plugin {
     return JSON.parse(new TextDecoder().decode(gunzipSync(new Uint8Array(data))));
   }
 
-  renderLottie(node, animationData) {
-    const container = document.createElement("span");
-    container.className = "tg-custom-emoji-lottie";
-    node.appendChild(container);
-    const animation = this.getLottie().loadAnimation({
-      container,
-      renderer: "svg",
-      loop: true,
-      autoplay: true,
+  async renderLottie(node, animationData, size) {
+    await this.skottie.mount(
+      node,
       animationData,
-      rendererSettings: { progressiveLoad: true },
-    });
-    this.animations.add(animation);
-  }
-
-  getLottie() {
-    if (this.lottieRuntime) return this.lottieRuntime;
-    const loaded = require("lottie-web/build/player/lottie_light.min.js");
-    const runtime = loaded.default || loaded;
-    if (!runtime || typeof runtime.loadAnimation !== "function") throw new Error("Lottie runtime недоступен");
-    this.lottieRuntime = runtime;
-    return runtime;
+      size,
+      node.dataset.tgId || "Telegram animation",
+    );
   }
 
   renderWebm(node, data) {

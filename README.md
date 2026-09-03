@@ -2,7 +2,7 @@
 
 An Obsidian plugin and optional self-hosted Rust service for importing a private Telegram chat into daily notes.
 
-It works on desktop, iOS, and Android and renders Telegram premium emoji and stickers in WebP, WebM, TGS, and Lottie JSON formats.
+It works on desktop, iOS, and Android and renders Telegram premium emoji and stickers in WebP, WebM, TGS, and Lottie JSON formats. TGS and JSON animations use Skia Skottie, matching Telegram more closely than browser SVG renderers.
 
 ## Features
 
@@ -81,3 +81,10 @@ MIT
 
 - Removed `tg-event` HTML comments from generated notes.
 - Existing legacy marker lines are removed automatically when the plugin starts.
+
+## Changes in 0.6.4
+
+- Replaced `lottie-web` with Skia Skottie/CanvasKit for TGS and Lottie JSON.
+- Fixed missing fills that made parts of some animated stickers look transparent.
+- Bundled compressed CanvasKit WASM into `main.js`, so BRAT installs the mobile renderer without extra files.
+- Pauses off-screen animations and shares one animation loop to reduce mobile CPU usage.

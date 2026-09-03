@@ -4,4 +4,4 @@ target/
 .env
 *.log
 *.part
-
+src/canvaskit-full.wasm.gz

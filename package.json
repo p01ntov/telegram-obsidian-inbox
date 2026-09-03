@@ -1,16 +1,17 @@
 {
   "name": "telegram-custom-emoji-plugin",
   "private": true,
-  "version": "0.6.3",
+  "version": "0.6.4",
   "scripts": {
-    "build": "esbuild src/main.js --bundle --external:obsidian --format=cjs --platform=browser --target=es2020 --outfile=dist/main.js",
+    "prebuild": "node scripts/prepare-canvaskit.mjs",
+    "build": "esbuild src/main.js --bundle --external:obsidian --external:fs --external:path --format=cjs --platform=browser --target=es2020 --loader:.gz=binary --outfile=dist/main.js",
     "test": "node --test src/telegram-blocks.test.js"
   },
   "dependencies": {
     "@codemirror/state": "^6.5.2",
     "@codemirror/view": "^6.36.0",
-    "fflate": "^0.8.2",
-    "lottie-web": "^5.13.0"
+    "canvaskit-wasm": "^0.41.1",
+    "fflate": "^0.8.2"
   },
   "devDependencies": {
     "esbuild": "^0.25.0"
