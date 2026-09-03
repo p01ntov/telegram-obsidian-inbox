@@ -1,0 +1,22 @@
+[Unit]
+Description=Server-side Telegram to Obsidian queue
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=obsidian-drive
+Group=obsidian-drive
+EnvironmentFile=/etc/telegram-to-obsidian.env
+ExecStart=/usr/local/bin/telegram_to_obsidian_server
+Restart=always
+RestartSec=5s
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectHome=true
+ProtectSystem=strict
+ReadWritePaths=/var/lib/obsidian-drive
+
+[Install]
+WantedBy=multi-user.target

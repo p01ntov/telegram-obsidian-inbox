@@ -1,0 +1,10 @@
+{
+  "id": "telegram-custom-emoji",
+  "name": "Telegram Custom Emoji",
+  "version": "0.6.2",
+  "minAppVersion": "1.4.0",
+  "description": "Imports a private Telegram inbox and renders premium emoji, TGS/Lottie animations, photos, and stickers on desktop and mobile.",
+  "author": "po1ntov",
+  "authorUrl": "https://github.com/p01ntov",
+  "isDesktopOnly": false
+}

@@ -1,0 +1,17 @@
+{
+  "name": "telegram-custom-emoji-plugin",
+  "private": true,
+  "version": "0.6.2",
+  "scripts": {
+    "build": "esbuild src/main.js --bundle --external:obsidian --format=cjs --platform=browser --target=es2020 --outfile=dist/main.js"
+  },
+  "dependencies": {
+    "@codemirror/state": "^6.5.2",
+    "@codemirror/view": "^6.36.0",
+    "fflate": "^0.8.2",
+    "lottie-web": "^5.13.0"
+  },
+  "devDependencies": {
+    "esbuild": "^0.25.0"
+  }
+}

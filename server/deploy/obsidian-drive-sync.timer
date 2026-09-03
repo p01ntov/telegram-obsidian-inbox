@@ -1,0 +1,12 @@
+[Unit]
+Description=Periodic private Google Drive upload for Obsidian attachments
+
+[Timer]
+OnBootSec=30s
+OnUnitActiveSec=30s
+AccuracySec=5s
+Persistent=true
+Unit=obsidian-drive-sync.service
+
+[Install]
+WantedBy=timers.target

@@ -1,0 +1,10 @@
+[Unit]
+Description=Upload Obsidian attachments to private Google Drive
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=obsidian-drive
+Group=obsidian-drive
+ExecStart=/usr/local/bin/obsidian-drive-sync.sh
