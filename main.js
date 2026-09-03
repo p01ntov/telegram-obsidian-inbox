@@ -22998,6 +22998,7 @@ var TelegramCustomEmojiPlugin = class extends Plugin {
     this.skottie = new SkottieRuntime();
     this.syncPromise = null;
     this.pollTimer = null;
+    this.resumeTimer = null;
     this.lastSyncSummary = "";
     if (persistedSettings.apiToken || persistedSettings.deviceName) {
       await this.saveSettings();
@@ -23032,6 +23033,13 @@ var TelegramCustomEmojiPlugin = class extends Plugin {
         new Notice("Telegram-\u044D\u043C\u043E\u0434\u0437\u0438 \u043F\u0435\u0440\u0435\u0437\u0430\u0433\u0440\u0443\u0436\u0435\u043D\u044B");
       }
     });
+    const syncAfterResume = () => this.scheduleResumeSync();
+    this.registerDomEvent(document, "visibilitychange", syncAfterResume);
+    this.registerDomEvent(window, "focus", syncAfterResume);
+    this.registerDomEvent(window, "pageshow", syncAfterResume);
+    this.registerEvent(
+      this.app.workspace.on("active-leaf-change", syncAfterResume)
+    );
     this.app.workspace.onLayoutReady(() => {
       this.configurePolling();
       window.setTimeout(() => {
@@ -23046,6 +23054,7 @@ var TelegramCustomEmojiPlugin = class extends Plugin {
   onunload() {
     this.domObserver?.disconnect();
     if (this.pollTimer !== null) window.clearInterval(this.pollTimer);
+    if (this.resumeTimer !== null) window.clearTimeout(this.resumeTimer);
     this.skottie?.destroy();
     for (const url of this.objectUrls) URL.revokeObjectURL(url);
     this.objectUrls.clear();
@@ -23103,6 +23112,15 @@ var TelegramCustomEmojiPlugin = class extends Plugin {
     const seconds = Math.max(15, Number(this.settings.pollIntervalSeconds) || 30);
     this.pollTimer = window.setInterval(() => void this.syncNow(false), seconds * 1e3);
     this.registerInterval(this.pollTimer);
+    this.scheduleResumeSync();
+  }
+  scheduleResumeSync() {
+    if (!this.settings.autoSync || !this.settings.apiToken || document.hidden) return;
+    if (this.resumeTimer !== null) window.clearTimeout(this.resumeTimer);
+    this.resumeTimer = window.setTimeout(() => {
+      this.resumeTimer = null;
+      void this.syncNow(false);
+    }, 250);
   }
   apiUrl(path) {
     const base = cleanServerUrl(this.settings.serverUrl);

@@ -1,7 +1,7 @@
 {
   "name": "telegram-custom-emoji-plugin",
   "private": true,
-  "version": "0.6.4",
+  "version": "0.6.5",
   "scripts": {
     "prebuild": "node scripts/prepare-canvaskit.mjs",
     "build": "esbuild src/main.js --bundle --external:obsidian --external:fs --external:path --format=cjs --platform=browser --target=es2020 --loader:.gz=binary --outfile=dist/main.js",

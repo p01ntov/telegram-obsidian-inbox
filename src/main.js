@@ -301,6 +301,7 @@ class TelegramCustomEmojiPlugin extends Plugin {
     this.skottie = new SkottieRuntime();
     this.syncPromise = null;
     this.pollTimer = null;
+    this.resumeTimer = null;
     this.lastSyncSummary = "";
 
     // Migrate old installations away from syncable data.json. API credentials
@@ -342,6 +343,14 @@ class TelegramCustomEmojiPlugin extends Plugin {
       },
     });
 
+    const syncAfterResume = () => this.scheduleResumeSync();
+    this.registerDomEvent(document, "visibilitychange", syncAfterResume);
+    this.registerDomEvent(window, "focus", syncAfterResume);
+    this.registerDomEvent(window, "pageshow", syncAfterResume);
+    this.registerEvent(
+      this.app.workspace.on("active-leaf-change", syncAfterResume),
+    );
+
     this.app.workspace.onLayoutReady(() => {
       this.configurePolling();
       window.setTimeout(() => {
@@ -357,6 +366,7 @@ class TelegramCustomEmojiPlugin extends Plugin {
   onunload() {
     this.domObserver?.disconnect();
     if (this.pollTimer !== null) window.clearInterval(this.pollTimer);
+    if (this.resumeTimer !== null) window.clearTimeout(this.resumeTimer);
     this.skottie?.destroy();
     for (const url of this.objectUrls) URL.revokeObjectURL(url);
     this.objectUrls.clear();
@@ -423,6 +433,16 @@ class TelegramCustomEmojiPlugin extends Plugin {
     const seconds = Math.max(15, Number(this.settings.pollIntervalSeconds) || 30);
     this.pollTimer = window.setInterval(() => void this.syncNow(false), seconds * 1000);
     this.registerInterval(this.pollTimer);
+    this.scheduleResumeSync();
+  }
+
+  scheduleResumeSync() {
+    if (!this.settings.autoSync || !this.settings.apiToken || document.hidden) return;
+    if (this.resumeTimer !== null) window.clearTimeout(this.resumeTimer);
+    this.resumeTimer = window.setTimeout(() => {
+      this.resumeTimer = null;
+      void this.syncNow(false);
+    }, 250);
   }
 
   apiUrl(path) {

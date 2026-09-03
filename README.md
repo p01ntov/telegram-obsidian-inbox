@@ -88,3 +88,8 @@ MIT
 - Fixed missing fills that made parts of some animated stickers look transparent.
 - Bundled compressed CanvasKit WASM into `main.js`, so BRAT installs the mobile renderer without extra files.
 - Pauses off-screen animations and shares one animation loop to reduce mobile CPU usage.
+
+## Changes in 0.6.5
+
+- Immediately checks the Telegram inbox when Obsidian returns to the foreground on iOS and Android.
+- Keeps the regular polling timer as a fallback while the app remains open.
